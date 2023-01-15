@@ -20,3 +20,9 @@ $(warning Warning: This project is forced to compile for the FTHR board only!)
 
 LIB_SDHC = 1
 
+# PROJ_CFLAGS += -D_STDARG_H
+PROJ_CFLAGS += -DHAVE_CONFIG_H
+PROJ_CFLAGS += -DFPM_DEFAULT
+PROJ_CFLAGS += -D__STACK_SIZE=0x2000
+
+VPATH += libmad

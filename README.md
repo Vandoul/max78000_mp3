@@ -1,6 +1,6 @@
-# ÃèÊö
+# æè¿°
 
-»ùÓÚMAX78000FTHR¿ª·¢°åµÄmp3²¥·ÅÆ÷¡£Ê¹ÓÃµÄÊÇlibmad¿â¡£
+åŸºäºŽMAX78000FTHRå¼€å‘æ¿çš„mp3æ’­æ”¾å™¨ã€‚ä½¿ç”¨çš„æ˜¯libmadåº“ã€‚
 
-ÐèÒª°²×°maximSDK¡£
+éœ€è¦å®‰è£…maximSDKã€‚
 

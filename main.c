@@ -46,6 +46,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "board.h"
 #include "mxc_delay.h"
@@ -75,7 +76,7 @@ FILINFO fno; //FFat File Information Object
 DIR dir;     //FFat Directory Object
 TCHAR message[MAXLEN], directory[MAXLEN], cwd[MAXLEN], filename[MAXLEN], volume_label[24],
     volume = '0';
-TCHAR* FF_ERRORS[20];
+extern const char* FF_ERRORS[20];
 DWORD clusters_free = 0, sectors_free = 0, sectors_total = 0, volume_sn = 0;
 UINT bytes_written = 0, bytes_read = 0, mounted = 0;
 BYTE work[4096];
@@ -83,6 +84,8 @@ static char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012
 mxc_gpio_cfg_t SDPowerEnablePin = {MXC_GPIO1, MXC_GPIO_PIN_12, MXC_GPIO_FUNC_OUT, MXC_GPIO_PAD_NONE,
                                    MXC_GPIO_VSSEL_VDDIO};
 
+/*********************/
+extern int decode(const char *path);
 /***** FUNCTIONS *****/
 
 void generateMessage(unsigned length)
@@ -514,31 +517,65 @@ int example()
 
     return 0;
 }
-
+#if 0
+static int readLine(char *buff, int size)
+{
+	int count = 0;
+	while(count < size) {
+		int c = getchar();
+		if(c < 0) {
+			continue;
+		}
+		printf("%02x ", c);
+		if(c == '\r') {
+			buff[count] = '\0';
+			break;
+		} else if(c != '\n') {
+			buff[count++] = c;
+		}
+	}
+	return count;
+}
+#endif
+void loadNextMP3(bool is_first, FILINFO *fno)
+{
+    if(is_first) {
+        f_findfirst(&dir, fno, "", "*.mp3");
+    } else {
+        f_findnext(&dir, fno);
+    }
+    printf("find file:%s\n", fno->fname);
+}
+void printCurrentMP3(FILINFO *fno)
+{
+    printf("current file:%s\n", fno->fname);
+}
+int playMP3(FILINFO *fno)
+{
+	printf("try to play file:%s\n", fno->fname);
+	if(strlen(fno->fname) > 0) {
+		return decode(fno->fname);
+	} else {
+		printf("invalid file path!!!\n");
+	}
+    return 0;
+}
 /******************************************************************************/
 int mad_main(int argc, char *argv[]);
 int main(void)
 {
-    FF_ERRORS[0]  = "FR_OK";
-    FF_ERRORS[1]  = "FR_DISK_ERR";
-    FF_ERRORS[2]  = "FR_INT_ERR";
-    FF_ERRORS[3]  = "FR_NOT_READY";
-    FF_ERRORS[4]  = "FR_NO_FILE";
-    FF_ERRORS[5]  = "FR_NO_PATH";
-    FF_ERRORS[6]  = "FR_INVLAID_NAME";
-    FF_ERRORS[7]  = "FR_DENIED";
-    FF_ERRORS[8]  = "FR_EXIST";
-    FF_ERRORS[9]  = "FR_INVALID_OBJECT";
-    FF_ERRORS[10] = "FR_WRITE_PROTECTED";
-    FF_ERRORS[11] = "FR_INVALID_DRIVE";
-    FF_ERRORS[12] = "FR_NOT_ENABLED";
-    FF_ERRORS[13] = "FR_NO_FILESYSTEM";
-    FF_ERRORS[14] = "FR_MKFS_ABORTED";
-    FF_ERRORS[15] = "FR_TIMEOUT";
-    FF_ERRORS[16] = "FR_LOCKED";
-    FF_ERRORS[17] = "FR_NOT_ENOUGH_CORE";
-    FF_ERRORS[18] = "FR_TOO_MANY_OPEN_FILES";
-    FF_ERRORS[19] = "FR_INVALID_PARAMETER";
+#if defined(BOARD_FTHR_REVA)
+    /* Wait for PMIC 1.8V to become available, about 180ms after power up. */
+    MXC_Delay(MXC_DELAY_MSEC(200));
+#endif
+
+    /* Switch to 100 MHz clock */
+    MXC_SYS_Clock_Select(MXC_SYS_CLOCK_IPO);
+    SystemCoreClockUpdate();
+
+    /* DO NOT DELETE THIS LINE: */
+    MXC_Delay(MXC_DELAY_SEC(2)); /* Let debugger interrupt if needed */
+
     srand(12347439);
     int run = 1, input = -1;
 
@@ -547,8 +584,9 @@ int main(void)
     // TODO - wait inserted
 //    mad_main(0,NULL);
 
-    printf("Card inserted.\n");
+    printf("Card inserted.%s %s\n", __DATE__, __TIME__);
     cwd[0] = '\0';
+    FILINFO fno;
     while (run) {
         f_getcwd(cwd, sizeof(cwd));
 
@@ -564,7 +602,10 @@ int main(void)
         printf("8. Delete a File\n");
         printf("9. Format Card and Run Exmaple of FatFS Operations\n");
         printf("10. Unmount Card and Quit\n");
-        printf("11. Codec MP3 file\n");
+        printf("11. Find first MP3 file\n");
+        printf("12. Find next MP3 file\n");
+        printf("13. Play MP3 file\n");
+        printf("14. print current MP3 file\n");
         printf("%s>>", cwd);
 
         input = -1;
@@ -618,6 +659,22 @@ int main(void)
             case 8:
                 delete ();
                 break;
+
+            case 11:
+            	loadNextMP3(true, &fno);
+            	break;
+
+            case 12:
+            	loadNextMP3(false, &fno);
+            	break;
+
+            case 13:
+            	playMP3(&fno);
+            	break;
+
+            case 14:
+            	printCurrentMP3(&fno);
+            	break;
 
             default:
                 printf("Invalid Selection %d!\n", input);
